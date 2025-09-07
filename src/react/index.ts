@@ -69,13 +69,27 @@ export interface PresenceState {
 // Use of this hook requires passing in a reference to the Convex presence
 // component defined in your Convex app. See ../../example/src/App.tsx for an
 // example of how to incorporate this hook into your application.
-export default function usePresence(
-  presence: PresenceAPI,
-  roomId: string,
-  userId: string,
-  interval: number = 10000,
-  convexUrl?: string,
-): PresenceState[] | undefined {
+export interface UsePresenceOptions {
+  presence: PresenceAPI;
+  roomId: string;
+  userId: string;
+  interval?: number;
+  convexUrl?: string;
+  /**
+   * @default true
+   */
+  disconnectOnDocumentHidden?: boolean;
+}
+
+export default function usePresence(options: UsePresenceOptions): PresenceState[] | undefined {
+  const {
+    presence,
+    roomId,
+    userId,
+    interval = 10000,
+    convexUrl,
+    disconnectOnDocumentHidden = true,
+  } = options;
   const hasMounted = useRef(false);
   const convex = useConvex();
   const baseUrl = convexUrl ?? convex.url;
@@ -156,7 +170,7 @@ export default function usePresence(
           clearInterval(intervalRef.current);
           intervalRef.current = null;
         }
-        if (sessionTokenRef.current) {
+        if (disconnectOnDocumentHidden && sessionTokenRef.current) {
           await disconnect({ sessionToken: sessionTokenRef.current });
         }
       } else {

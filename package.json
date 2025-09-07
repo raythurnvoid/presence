@@ -45,33 +45,80 @@
   "exports": {
     "./package.json": "./package.json",
     ".": {
-      "types": "./dist/client/index.d.ts",
-      "default": "./dist/client/index.js"
+      "import": {
+        "@convex-dev/component-source": "./src/client/index.ts",
+        "types": "./src/client/index.d.ts",
+        "default": "./src/client/index.js"
+      },
+      "require": {
+        "@convex-dev/component-source": "./src/client/index.ts",
+        "types": "./dist/client/index.d.ts",
+        "default": "./dist/client/index.js"
+      }
     },
     "./react": {
-      "types": "./dist/react/index.d.ts",
-      "default": "./dist/react/index.js"
+      "import": {
+        "@convex-dev/component-source": "./src/react/index.ts",
+        "types": "./src/react/index.d.ts",
+        "default": "./src/react/index.js"
+      },
+      "require": {
+        "@convex-dev/component-source": "./src/react/index.ts",
+        "types": "./dist/react/index.d.ts",
+        "default": "./dist/react/index.js"
+      }
     },
     "./react-native": {
-      "types": "./dist/react-native/index.d.ts",
-      "default": "./dist/react-native/index.js"
+      "import": {
+        "@convex-dev/component-source": "./src/react-native/index.ts",
+        "types": "./src/react-native/index.d.ts",
+        "default": "./src/react-native/index.js"
+      },
+      "require": {
+        "@convex-dev/component-source": "./src/react-native/index.ts",
+        "types": "./dist/react-native/index.d.ts",
+        "default": "./dist/react-native/index.js"
+      }
     },
     "./facepile": {
-      "types": "./dist/facepile/index.d.ts",
-      "default": "./dist/facepile/index.js"
+      "import": {
+        "@convex-dev/component-source": "./src/facepile/index.tsx",
+        "types": "./src/facepile/index.d.ts",
+        "default": "./src/facepile/index.js"
+      },
+      "require": {
+        "@convex-dev/component-source": "./src/facepile/index.tsx",
+        "types": "./dist/facepile/index.d.ts",
+        "default": "./dist/facepile/index.js"
+      }
     },
-    "./facepile.css": "./dist/facepile/facepile.css",
-    "./test": "./src/test.ts",
+    "./facepile.css": {
+      "import": "./src/facepile/facepile.css",
+      "require": "./dist/facepile/facepile.css"
+    },
+    "./test": {
+      "import": {
+        "@convex-dev/component-source": "./src/test.ts",
+        "types": "./src/test.ts",
+        "default": "./src/test.ts"
+      }
+    },
     "./_generated/component.js": {
       "types": "./dist/component/_generated/component.d.ts"
     },
     "./convex.config": {
-      "types": "./dist/component/convex.config.d.ts",
-      "default": "./dist/component/convex.config.js"
+      "import": {
+        "@convex-dev/component-source": "./src/component/convex.config.ts",
+        "types": "./src/component/convex.config.d.ts",
+        "default": "./src/component/convex.config.js"
+      }
     },
     "./convex.config.js": {
-      "types": "./dist/component/convex.config.d.ts",
-      "default": "./dist/component/convex.config.js"
+      "import": {
+        "@convex-dev/component-source": "./src/component/convex.config.ts",
+        "types": "./src/component/convex.config.d.ts",
+        "default": "./src/component/convex.config.js"
+      }
     }
   },
   "peerDependencies": {
