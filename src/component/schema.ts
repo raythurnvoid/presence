@@ -44,4 +44,25 @@ export default defineSchema({
     sessionId: v.string(),
     scheduledFunctionId: v.id("_scheduled_functions"),
   }).index("sessionId", ["sessionId"]),
+
+  // #region Custom code
+  // User data for rooms.
+  room_user_data: defineTable({
+    roomId: v.string(),
+    userId: v.string(),
+    data: v.any(),
+  })
+    .index("by_room_user", ["roomId", "userId"])
+    .index("by_room", ["roomId"]),
+
+  // Session data for rooms.
+  room_session_data: defineTable({
+    roomId: v.string(),
+    sessionId: v.string(),
+    data: v.any(),
+  })
+    .index("by_room_session", ["roomId", "sessionId"])
+    .index("by_room", ["roomId"]),
+
+  // #endregion Custom code
 });

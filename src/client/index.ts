@@ -174,4 +174,81 @@ export class Presence<
   ): Promise<null> {
     return ctx.runMutation(this.component.public.removeRoom, { roomId });
   }
+
+  // #region Custom code
+
+  /**
+   * List all sessions (browser tabs/connections) in a room.
+   */
+  async listSessions(
+    ctx: RunQueryCtx,
+    roomToken: string,
+    limit: number = 104
+  ): Promise<Array<{ sessionId: string; userId: UserId; roomId: RoomId }>> {
+    return ctx.runQuery(this.component.public.listSessions, { roomToken, limit }) as Promise<
+      { sessionId: string; userId: UserId; roomId: RoomId }[]
+    >;
+  }
+
+  /**
+   * Get all user data for a room.
+   */
+  async getUserData(ctx: RunQueryCtx, roomToken: string): Promise<Record<string, any>> {
+    return ctx.runQuery(this.component.public.getUserData, { roomToken }) as Promise<
+      Record<string, any>
+    >;
+  }
+
+  /**
+   * Get all session data for a room.
+   */
+  async getSessionData(ctx: RunQueryCtx, roomToken: string): Promise<Record<string, any>> {
+    return ctx.runQuery(this.component.public.getSessionData, { roomToken }) as Promise<
+      Record<string, any>
+    >;
+  }
+
+  /**
+   * Set user data for a room. Upserts if data already exists.
+   */
+  async setUserData(
+    ctx: RunMutationCtx,
+    roomToken: string,
+    userId: UserId,
+    data: any
+  ): Promise<null> {
+    return ctx.runMutation(this.component.public.setUserData, { roomToken, userId, data });
+  }
+
+  /**
+   * Set session data for a room. Upserts if data already exists.
+   */
+  async setSessionData(
+    ctx: RunMutationCtx,
+    roomToken: string,
+    sessionId: string,
+    data: any
+  ): Promise<null> {
+    return ctx.runMutation(this.component.public.setSessionData, { roomToken, sessionId, data });
+  }
+
+  /**
+   * Remove user data for a room.
+   */
+  async removeUserData(ctx: RunMutationCtx, roomToken: string, userId: UserId): Promise<null> {
+    return ctx.runMutation(this.component.public.removeUserData, { roomToken, userId });
+  }
+
+  /**
+   * Remove session data for a room.
+   */
+  async removeSessionData(
+    ctx: RunMutationCtx,
+    roomToken: string,
+    sessionId: string
+  ): Promise<null> {
+    return ctx.runMutation(this.component.public.removeSessionData, { roomToken, sessionId });
+  }
+
+  // #endregion Custom code
 }

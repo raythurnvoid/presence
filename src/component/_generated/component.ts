@@ -31,6 +31,20 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
         null,
         Name
       >;
+      getSessionData: FunctionReference<
+        "query",
+        "internal",
+        { roomToken: string },
+        Record<string, any>,
+        Name
+      >;
+      getUserData: FunctionReference<
+        "query",
+        "internal",
+        { roomToken: string },
+        Record<string, any>,
+        Name
+      >;
       heartbeat: FunctionReference<
         "mutation",
         "internal",
@@ -62,6 +76,13 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
         Array<{ lastDisconnected: number; online: boolean; userId: string }>,
         Name
       >;
+      listSessions: FunctionReference<
+        "query",
+        "internal",
+        { limit?: number; roomToken: string },
+        Array<{ sessionId: string; userId: string }>,
+        Name
+      >;
       listUser: FunctionReference<
         "query",
         "internal",
@@ -80,6 +101,34 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
         "mutation",
         "internal",
         { roomId: string; userId: string },
+        null,
+        Name
+      >;
+      removeSessionData: FunctionReference<
+        "mutation",
+        "internal",
+        { roomToken: string; sessionId: string },
+        null,
+        Name
+      >;
+      removeUserData: FunctionReference<
+        "mutation",
+        "internal",
+        { roomToken: string; userId: string },
+        null,
+        Name
+      >;
+      setSessionData: FunctionReference<
+        "mutation",
+        "internal",
+        { data: any; roomToken: string; sessionId: string },
+        null,
+        Name
+      >;
+      setUserData: FunctionReference<
+        "mutation",
+        "internal",
+        { data: any; roomToken: string; userId: string },
         null,
         Name
       >;

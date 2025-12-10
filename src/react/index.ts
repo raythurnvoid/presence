@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
-import { useQuery, useMutation, useConvex } from "convex/react";
+import { useEffect, useRef, useState } from "react";
+import { useMutation, useConvex } from "convex/react";
 import type { FunctionReference } from "convex/server";
 import useSingleFlight from "./useSingleFlight.js";
 
@@ -34,12 +34,6 @@ import useSingleFlight from "./useSingleFlight.js";
 //   },
 // });
 export interface PresenceAPI {
-  list: FunctionReference<
-    "query",
-    "public",
-    { roomToken: string },
-    PresenceState[]
-  >;
   heartbeat: FunctionReference<
     "mutation",
     "public",
@@ -47,18 +41,6 @@ export interface PresenceAPI {
     { roomToken: string; sessionToken: string }
   >;
   disconnect: FunctionReference<"mutation", "public", { sessionToken: string }>;
-}
-
-// Presence state for a user within the given room.
-export interface PresenceState {
-  userId: string;
-  online: boolean;
-  lastDisconnected: number;
-  data?: unknown;
-  // Set these accordingly in your Convex app.
-  // See ../../example-with-auth/convex/presence.ts for an example.
-  name?: string;
-  image?: string;
 }
 
 // React hook for maintaining presence state.
@@ -69,7 +51,7 @@ export interface PresenceState {
 // Use of this hook requires passing in a reference to the Convex presence
 // component defined in your Convex app. See ../../example/src/App.tsx for an
 // example of how to incorporate this hook into your application.
-export interface UsePresenceOptions {
+export type UsePresenceOptions = {
   presence: PresenceAPI;
   roomId: string;
   userId: string;
@@ -79,9 +61,9 @@ export interface UsePresenceOptions {
    * @default true
    */
   disconnectOnDocumentHidden?: boolean;
-}
+};
 
-export default function usePresence(options: UsePresenceOptions): PresenceState[] | undefined {
+export function usePresence(options: UsePresenceOptions) {
   const {
     presence,
     roomId,
@@ -96,11 +78,11 @@ export default function usePresence(options: UsePresenceOptions): PresenceState[
 
   // Each session (browser tab etc) has a unique ID and a token used to disconnect it.
   const [sessionId, setSessionId] = useState(() => crypto.randomUUID());
-  const [sessionToken, setSessionToken] = useState<string | null>(null);
-  const sessionTokenRef = useRef<string | null>(null);
+  const [sessionToken, setSessionToken] = useState<string | undefined>(undefined);
+  const sessionTokenRef = useRef<string | undefined>(undefined);
 
-  const [roomToken, setRoomToken] = useState<string | null>(null);
-  const roomTokenRef = useRef<string | null>(null);
+  const [roomToken, setRoomToken] = useState<string | undefined>(undefined);
+  const roomTokenRef = useRef<string | undefined>(undefined);
 
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -117,8 +99,8 @@ export default function usePresence(options: UsePresenceOptions): PresenceState[
       void disconnect({ sessionToken: sessionTokenRef.current });
     }
     setSessionId(crypto.randomUUID());
-    setSessionToken(null);
-    setRoomToken(null);
+    setSessionToken(undefined);
+    setRoomToken(undefined);
   }, [roomId, userId, disconnect]);
 
   useEffect(() => {
@@ -206,14 +188,8 @@ export default function usePresence(options: UsePresenceOptions): PresenceState[
     hasMounted.current = true;
   }, []);
 
-  const state = useQuery(presence.list, roomToken ? { roomToken } : "skip");
-  return useMemo(
-    () =>
-      state?.slice().sort((a, b) => {
-        if (a.userId === userId) return -1;
-        if (b.userId === userId) return 1;
-        return 0;
-      }),
-    [state, userId],
-  );
+  return {
+    roomToken,
+    sessionId,
+  };
 }

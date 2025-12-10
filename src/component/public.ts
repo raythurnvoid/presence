@@ -436,3 +436,227 @@ async function getUserPresence(ctx: QueryCtx, userId: string, roomId: string) {
 }
 
 // TODO: rotate the room tokens
+
+// #region Custom code
+
+export const listSessions = query({
+  args: {
+    roomToken: v.string(),
+    limit: v.optional(v.number()),
+  },
+  returns: v.array(
+    v.object({
+      sessionId: v.string(),
+      userId: v.string(),
+    })
+  ),
+  handler: async (ctx, { roomToken, limit = 104 }) => {
+    if (!roomToken) {
+      return [];
+    }
+    const roomTokenRecord = await ctx.db
+      .query("roomTokens")
+      .withIndex("token", (q) => q.eq("token", roomToken))
+      .unique();
+    if (!roomTokenRecord) {
+      return [];
+    }
+    const { roomId } = roomTokenRecord;
+
+    const sessions = await ctx.db
+      .query("sessions")
+      .withIndex("room_user_session", (q) => q.eq("roomId", roomId))
+      .take(limit);
+
+    return sessions.map(({ sessionId, userId }) => ({
+      sessionId,
+      userId,
+    }));
+  },
+});
+
+export const getUserData = query({
+  args: {
+    roomToken: v.string(),
+  },
+  returns: v.record(v.string(), v.any()),
+  handler: async (ctx, { roomToken }) => {
+    if (!roomToken) {
+      return {};
+    }
+    const roomTokenRecord = await ctx.db
+      .query("roomTokens")
+      .withIndex("token", (q) => q.eq("token", roomToken))
+      .unique();
+    if (!roomTokenRecord) {
+      return {};
+    }
+    const { roomId } = roomTokenRecord;
+
+    const userData = await ctx.db
+      .query("room_user_data")
+      .withIndex("by_room", (q) => q.eq("roomId", roomId))
+      .collect();
+
+    const result: Record<string, any> = {};
+    for (const { userId, data } of userData) {
+      result[userId] = data;
+    }
+    return result;
+  },
+});
+
+export const getSessionData = query({
+  args: {
+    roomToken: v.string(),
+  },
+  returns: v.record(v.string(), v.any()),
+  handler: async (ctx, { roomToken }) => {
+    if (!roomToken) {
+      return {};
+    }
+    const roomTokenRecord = await ctx.db
+      .query("roomTokens")
+      .withIndex("token", (q) => q.eq("token", roomToken))
+      .unique();
+    if (!roomTokenRecord) {
+      return {};
+    }
+    const { roomId } = roomTokenRecord;
+
+    const sessionData = await ctx.db
+      .query("room_session_data")
+      .withIndex("by_room", (q) => q.eq("roomId", roomId))
+      .collect();
+
+    const result: Record<string, any> = {};
+    for (const { sessionId, data } of sessionData) {
+      result[sessionId] = data;
+    }
+    return result;
+  },
+});
+
+export const setUserData = mutation({
+  args: {
+    roomToken: v.string(),
+    userId: v.string(),
+    data: v.any(),
+  },
+  returns: v.null(),
+  handler: async (ctx, { roomToken, userId, data }) => {
+    const roomTokenRecord = await ctx.db
+      .query("roomTokens")
+      .withIndex("token", (q) => q.eq("token", roomToken))
+      .unique();
+    if (!roomTokenRecord) {
+      throw new Error("Invalid room token");
+    }
+    const { roomId } = roomTokenRecord;
+
+    const existing = await ctx.db
+      .query("room_user_data")
+      .withIndex("by_room_user", (q) => q.eq("roomId", roomId).eq("userId", userId))
+      .unique();
+
+    if (existing) {
+      await ctx.db.patch(existing._id, { data });
+    } else {
+      await ctx.db.insert("room_user_data", { roomId, userId, data });
+    }
+
+    return null;
+  },
+});
+
+export const setSessionData = mutation({
+  args: {
+    roomToken: v.string(),
+    sessionId: v.string(),
+    data: v.any(),
+  },
+  returns: v.null(),
+  handler: async (ctx, { roomToken, sessionId, data }) => {
+    const roomTokenRecord = await ctx.db
+      .query("roomTokens")
+      .withIndex("token", (q) => q.eq("token", roomToken))
+      .unique();
+    if (!roomTokenRecord) {
+      throw new Error("Invalid room token");
+    }
+    const { roomId } = roomTokenRecord;
+
+    const existing = await ctx.db
+      .query("room_session_data")
+      .withIndex("by_room_session", (q) => q.eq("roomId", roomId).eq("sessionId", sessionId))
+      .unique();
+
+    if (existing) {
+      await ctx.db.patch(existing._id, { data });
+    } else {
+      await ctx.db.insert("room_session_data", { roomId, sessionId, data });
+    }
+
+    return null;
+  },
+});
+
+export const removeUserData = mutation({
+  args: {
+    roomToken: v.string(),
+    userId: v.string(),
+  },
+  returns: v.null(),
+  handler: async (ctx, { roomToken, userId }) => {
+    const roomTokenRecord = await ctx.db
+      .query("roomTokens")
+      .withIndex("token", (q) => q.eq("token", roomToken))
+      .unique();
+    if (!roomTokenRecord) {
+      throw new Error("Invalid room token");
+    }
+    const { roomId } = roomTokenRecord;
+
+    const existing = await ctx.db
+      .query("room_user_data")
+      .withIndex("by_room_user", (q) => q.eq("roomId", roomId).eq("userId", userId))
+      .unique();
+
+    if (existing) {
+      await ctx.db.delete(existing._id);
+    }
+
+    return null;
+  },
+});
+
+export const removeSessionData = mutation({
+  args: {
+    roomToken: v.string(),
+    sessionId: v.string(),
+  },
+  returns: v.null(),
+  handler: async (ctx, { roomToken, sessionId }) => {
+    const roomTokenRecord = await ctx.db
+      .query("roomTokens")
+      .withIndex("token", (q) => q.eq("token", roomToken))
+      .unique();
+    if (!roomTokenRecord) {
+      throw new Error("Invalid room token");
+    }
+    const { roomId } = roomTokenRecord;
+
+    const existing = await ctx.db
+      .query("room_session_data")
+      .withIndex("by_room_session", (q) => q.eq("roomId", roomId).eq("sessionId", sessionId))
+      .unique();
+
+    if (existing) {
+      await ctx.db.delete(existing._id);
+    }
+
+    return null;
+  },
+});
+
+// #endregion Custom code
