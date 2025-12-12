@@ -31,7 +31,7 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
         null,
         Name
       >;
-      getSessionData: FunctionReference<
+      getSessionsData: FunctionReference<
         "query",
         "internal",
         { roomToken: string },
@@ -54,7 +54,7 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
           sessionId: string;
           userId: string;
         },
-        { roomToken: string; sessionToken: string },
+        { isNewSession: boolean; roomToken: string; sessionToken: string },
         Name
       >;
       list: FunctionReference<

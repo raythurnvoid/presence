@@ -89,7 +89,14 @@ export function usePresence(options: UsePresenceOptions) {
   const heartbeat = useSingleFlight(useMutation(presence.heartbeat));
   const disconnect = useSingleFlight(useMutation(presence.disconnect));
 
+  const firstHeartBeatDebounce = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  const oldRoomIdRef = useRef(roomId);
+  const oldUserIdRef = useRef(userId);
+
   useEffect(() => {
+    if (oldRoomIdRef.current === roomId && oldUserIdRef.current === userId) return;
+
     // Reset session state when roomId or userId changes.
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
@@ -101,6 +108,9 @@ export function usePresence(options: UsePresenceOptions) {
     setSessionId(crypto.randomUUID());
     setSessionToken(undefined);
     setRoomToken(undefined);
+
+    oldRoomIdRef.current = roomId;
+    oldUserIdRef.current = userId;
   }, [roomId, userId, disconnect]);
 
   useEffect(() => {
@@ -110,6 +120,8 @@ export function usePresence(options: UsePresenceOptions) {
   }, [sessionToken, roomToken]);
 
   useEffect(() => {
+    if (!sessionId) return;
+
     // Periodic heartbeats.
     const sendHeartbeat = async () => {
       const result = await heartbeat({ roomId, userId, sessionId, interval });
@@ -118,7 +130,9 @@ export function usePresence(options: UsePresenceOptions) {
     };
 
     // Send initial heartbeat
-    void sendHeartbeat();
+    firstHeartBeatDebounce.current = setTimeout(() => {
+      void sendHeartbeat();
+    });
 
     // Clear any existing interval before setting a new one
     if (intervalRef.current) {
@@ -170,6 +184,10 @@ export function usePresence(options: UsePresenceOptions) {
 
     // Cleanup.
     return () => {
+      if (firstHeartBeatDebounce.current) {
+        clearTimeout(firstHeartBeatDebounce.current);
+      }
+
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
       }

@@ -18,6 +18,7 @@ export const heartbeat = mutation({
   returns: v.object({
     roomToken: v.string(),
     sessionToken: v.string(),
+    isNewSession: v.boolean(),
   }),
   handler: async (ctx, { roomId, userId, sessionId, interval = 10000 }) => {
     // Update or create session
@@ -104,7 +105,7 @@ export const heartbeat = mutation({
       });
     }
 
-    return { roomToken, sessionToken: sessionToken };
+    return { roomToken, sessionToken, isNewSession: !session };
   },
 });
 
@@ -304,6 +305,28 @@ export const disconnect = mutation({
       }
       await ctx.db.delete("sessionTimeouts", timeout._id);
     }
+
+    // Clean up session and user data
+    //
+    // Remove session data
+    const sessionData = await ctx.db
+      .query("room_session_data")
+      .withIndex("by_room_session", (q) => q.eq("roomId", roomId).eq("sessionId", sessionId))
+      .unique();
+    if (sessionData) {
+      await ctx.db.delete(sessionData._id);
+    }
+
+    // If no remaining sessions, remove user data
+    if (remainingSessions.length === 0) {
+      const userData = await ctx.db
+        .query("room_user_data")
+        .withIndex("by_room_user", (q) => q.eq("roomId", roomId).eq("userId", userId))
+        .unique();
+      if (userData) {
+        await ctx.db.delete(userData._id);
+      }
+    }
   },
 });
 
@@ -363,7 +386,28 @@ export const removeRoomUser = mutation({
         await ctx.scheduler.cancel(timeout.scheduledFunctionId);
         await ctx.db.delete("sessionTimeouts", timeout._id);
       }
+
+      // Remove session data
+      const sessionData = await ctx.db
+        .query("room_session_data")
+        .withIndex("by_room_session", (q) =>
+          q.eq("roomId", roomId).eq("sessionId", session.sessionId)
+        )
+        .unique();
+      if (sessionData) {
+        await ctx.db.delete(sessionData._id);
+      }
     }
+
+    // Remove user data
+    const userData = await ctx.db
+      .query("room_user_data")
+      .withIndex("by_room_user", (q) => q.eq("roomId", roomId).eq("userId", userId))
+      .unique();
+    if (userData) {
+      await ctx.db.delete(userData._id);
+    }
+
     return null;
   },
 });
@@ -408,6 +452,24 @@ export const removeRoom = mutation({
       }
     }
 
+    // Remove session data
+    const sessionDataRecords = await ctx.db
+      .query("room_session_data")
+      .withIndex("by_room", (q) => q.eq("roomId", roomId))
+      .collect();
+    for (const sessionData of sessionDataRecords) {
+      await ctx.db.delete(sessionData._id);
+    }
+
+    // Remove user data
+    const userDataRecords = await ctx.db
+      .query("room_user_data")
+      .withIndex("by_room", (q) => q.eq("roomId", roomId))
+      .collect();
+    for (const userData of userDataRecords) {
+      await ctx.db.delete(userData._id);
+    }
+
     const roomToken = await ctx.db
       .query("roomTokens")
       .withIndex("room", (q) => q.eq("roomId", roomId))
@@ -450,13 +512,16 @@ export const listSessions = query({
       userId: v.string(),
     })
   ),
-  handler: async (ctx, { roomToken, limit = 104 }) => {
-    if (!roomToken) {
+  handler: async (ctx, args) => {
+    const limit = args.limit ?? 104;
+
+    if (!args.roomToken) {
       return [];
     }
+
     const roomTokenRecord = await ctx.db
       .query("roomTokens")
-      .withIndex("token", (q) => q.eq("token", roomToken))
+      .withIndex("token", (q) => q.eq("token", args.roomToken))
       .unique();
     if (!roomTokenRecord) {
       return [];
@@ -506,7 +571,7 @@ export const getUserData = query({
   },
 });
 
-export const getSessionData = query({
+export const getSessionsData = query({
   args: {
     roomToken: v.string(),
   },

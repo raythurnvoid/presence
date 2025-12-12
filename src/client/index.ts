@@ -40,7 +40,7 @@ export class Presence<
     userId: UserId,
     sessionId: string,
     interval: number,
-  ): Promise<{ roomToken: string; sessionToken: string }> {
+  ): Promise<{ roomToken: string; sessionToken: string; isNewSession: boolean }> {
     return ctx.runMutation(this.component.public.heartbeat, {
       roomId,
       userId,
@@ -184,9 +184,9 @@ export class Presence<
     ctx: RunQueryCtx,
     roomToken: string,
     limit: number = 104
-  ): Promise<Array<{ sessionId: string; userId: UserId; roomId: RoomId }>> {
+  ): Promise<Array<{ sessionId: string; userId: UserId }>> {
     return ctx.runQuery(this.component.public.listSessions, { roomToken, limit }) as Promise<
-      { sessionId: string; userId: UserId; roomId: RoomId }[]
+      Array<{ sessionId: string; userId: UserId }>
     >;
   }
 
@@ -194,18 +194,14 @@ export class Presence<
    * Get all user data for a room.
    */
   async getUserData(ctx: RunQueryCtx, roomToken: string): Promise<Record<string, any>> {
-    return ctx.runQuery(this.component.public.getUserData, { roomToken }) as Promise<
-      Record<string, any>
-    >;
+    return ctx.runQuery(this.component.public.getUserData, { roomToken });
   }
 
   /**
    * Get all session data for a room.
    */
-  async getSessionData(ctx: RunQueryCtx, roomToken: string): Promise<Record<string, any>> {
-    return ctx.runQuery(this.component.public.getSessionData, { roomToken }) as Promise<
-      Record<string, any>
-    >;
+  async getSessionsData(ctx: RunQueryCtx, roomToken: string): Promise<Record<string, any>> {
+    return ctx.runQuery(this.component.public.getSessionsData, { roomToken });
   }
 
   /**
