@@ -219,13 +219,8 @@ export class Presence<
   /**
    * Set session data for a room. Upserts if data already exists.
    */
-  async setSessionData(
-    ctx: RunMutationCtx,
-    roomToken: string,
-    sessionId: string,
-    data: any
-  ): Promise<null> {
-    return ctx.runMutation(this.component.public.setSessionData, { roomToken, sessionId, data });
+  async setSessionData(ctx: RunMutationCtx, sessionToken: string, data: any): Promise<null> {
+    return ctx.runMutation(this.component.public.setSessionData, { sessionToken, data });
   }
 
   /**

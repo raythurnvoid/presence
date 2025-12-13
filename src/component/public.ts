@@ -636,20 +636,30 @@ export const setUserData = mutation({
 
 export const setSessionData = mutation({
   args: {
-    roomToken: v.string(),
-    sessionId: v.string(),
+    sessionToken: v.string(),
     data: v.any(),
   },
   returns: v.null(),
-  handler: async (ctx, { roomToken, sessionId, data }) => {
-    const roomTokenRecord = await ctx.db
-      .query("roomTokens")
-      .withIndex("token", (q) => q.eq("token", roomToken))
+  handler: async (ctx, { sessionToken, data }) => {
+    const sessionTokenRecord = await ctx.db
+      .query("sessionTokens")
+      .withIndex("token", (q) => q.eq("token", sessionToken))
       .unique();
-    if (!roomTokenRecord) {
-      throw new Error("Invalid room token");
+    if (!sessionTokenRecord) {
+      // Session is gone / token is stale. Ignore to avoid recreating orphan session data.
+      return null;
     }
-    const { roomId } = roomTokenRecord;
+    const { sessionId } = sessionTokenRecord;
+
+    const session = await ctx.db
+      .query("sessions")
+      .withIndex("sessionId", (q) => q.eq("sessionId", sessionId))
+      .unique();
+    if (!session) {
+      // Session has been removed already. Ignore to avoid recreating orphan session data.
+      return null;
+    }
+    const { roomId } = session;
 
     const existing = await ctx.db
       .query("room_session_data")

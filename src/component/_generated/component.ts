@@ -121,7 +121,7 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
       setSessionData: FunctionReference<
         "mutation",
         "internal",
-        { data: any; roomToken: string; sessionId: string },
+        { data: any; sessionToken: string },
         null,
         Name
       >;

@@ -209,5 +209,6 @@ export function usePresence(options: UsePresenceOptions) {
   return {
     roomToken,
     sessionId,
+    sessionToken,
   };
 }
