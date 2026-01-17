@@ -191,13 +191,6 @@ export class Presence<
   }
 
   /**
-   * Get all user data for a room.
-   */
-  async getUserData(ctx: RunQueryCtx, roomToken: string): Promise<Record<string, any>> {
-    return ctx.runQuery(this.component.public.getUserData, { roomToken });
-  }
-
-  /**
    * Get all session data for a room.
    */
   async getSessionsData(ctx: RunQueryCtx, roomToken: string): Promise<Record<string, any>> {
@@ -205,29 +198,10 @@ export class Presence<
   }
 
   /**
-   * Set user data for a room. Upserts if data already exists.
-   */
-  async setUserData(
-    ctx: RunMutationCtx,
-    roomToken: string,
-    userId: UserId,
-    data: any
-  ): Promise<null> {
-    return ctx.runMutation(this.component.public.setUserData, { roomToken, userId, data });
-  }
-
-  /**
    * Set session data for a room. Upserts if data already exists.
    */
   async setSessionData(ctx: RunMutationCtx, sessionToken: string, data: any): Promise<null> {
     return ctx.runMutation(this.component.public.setSessionData, { sessionToken, data });
-  }
-
-  /**
-   * Remove user data for a room.
-   */
-  async removeUserData(ctx: RunMutationCtx, roomToken: string, userId: UserId): Promise<null> {
-    return ctx.runMutation(this.component.public.removeUserData, { roomToken, userId });
   }
 
   /**

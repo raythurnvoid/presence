@@ -38,13 +38,6 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
         Record<string, any>,
         Name
       >;
-      getUserData: FunctionReference<
-        "query",
-        "internal",
-        { roomToken: string },
-        Record<string, any>,
-        Name
-      >;
       heartbeat: FunctionReference<
         "mutation",
         "internal",
@@ -111,24 +104,10 @@ export type ComponentApi<Name extends string | undefined = string | undefined> =
         null,
         Name
       >;
-      removeUserData: FunctionReference<
-        "mutation",
-        "internal",
-        { roomToken: string; userId: string },
-        null,
-        Name
-      >;
       setSessionData: FunctionReference<
         "mutation",
         "internal",
         { data: any; sessionToken: string },
-        null,
-        Name
-      >;
-      setUserData: FunctionReference<
-        "mutation",
-        "internal",
-        { data: any; roomToken: string; userId: string },
         null,
         Name
       >;

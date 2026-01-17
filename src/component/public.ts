@@ -316,17 +316,6 @@ export const disconnect = mutation({
     if (sessionData) {
       await ctx.db.delete(sessionData._id);
     }
-
-    // If no remaining sessions, remove user data
-    if (remainingSessions.length === 0) {
-      const userData = await ctx.db
-        .query("room_user_data")
-        .withIndex("by_room_user", (q) => q.eq("roomId", roomId).eq("userId", userId))
-        .unique();
-      if (userData) {
-        await ctx.db.delete(userData._id);
-      }
-    }
   },
 });
 
@@ -399,15 +388,6 @@ export const removeRoomUser = mutation({
       }
     }
 
-    // Remove user data
-    const userData = await ctx.db
-      .query("room_user_data")
-      .withIndex("by_room_user", (q) => q.eq("roomId", roomId).eq("userId", userId))
-      .unique();
-    if (userData) {
-      await ctx.db.delete(userData._id);
-    }
-
     return null;
   },
 });
@@ -459,15 +439,6 @@ export const removeRoom = mutation({
       .collect();
     for (const sessionData of sessionDataRecords) {
       await ctx.db.delete(sessionData._id);
-    }
-
-    // Remove user data
-    const userDataRecords = await ctx.db
-      .query("room_user_data")
-      .withIndex("by_room", (q) => q.eq("roomId", roomId))
-      .collect();
-    for (const userData of userDataRecords) {
-      await ctx.db.delete(userData._id);
     }
 
     const roomToken = await ctx.db
@@ -540,37 +511,6 @@ export const listSessions = query({
   },
 });
 
-export const getUserData = query({
-  args: {
-    roomToken: v.string(),
-  },
-  returns: v.record(v.string(), v.any()),
-  handler: async (ctx, { roomToken }) => {
-    if (!roomToken) {
-      return {};
-    }
-    const roomTokenRecord = await ctx.db
-      .query("roomTokens")
-      .withIndex("token", (q) => q.eq("token", roomToken))
-      .unique();
-    if (!roomTokenRecord) {
-      return {};
-    }
-    const { roomId } = roomTokenRecord;
-
-    const userData = await ctx.db
-      .query("room_user_data")
-      .withIndex("by_room", (q) => q.eq("roomId", roomId))
-      .collect();
-
-    const result: Record<string, any> = {};
-    for (const { userId, data } of userData) {
-      result[userId] = data;
-    }
-    return result;
-  },
-});
-
 export const getSessionsData = query({
   args: {
     roomToken: v.string(),
@@ -599,38 +539,6 @@ export const getSessionsData = query({
       result[sessionId] = data;
     }
     return result;
-  },
-});
-
-export const setUserData = mutation({
-  args: {
-    roomToken: v.string(),
-    userId: v.string(),
-    data: v.any(),
-  },
-  returns: v.null(),
-  handler: async (ctx, { roomToken, userId, data }) => {
-    const roomTokenRecord = await ctx.db
-      .query("roomTokens")
-      .withIndex("token", (q) => q.eq("token", roomToken))
-      .unique();
-    if (!roomTokenRecord) {
-      throw new Error("Invalid room token");
-    }
-    const { roomId } = roomTokenRecord;
-
-    const existing = await ctx.db
-      .query("room_user_data")
-      .withIndex("by_room_user", (q) => q.eq("roomId", roomId).eq("userId", userId))
-      .unique();
-
-    if (existing) {
-      await ctx.db.patch(existing._id, { data });
-    } else {
-      await ctx.db.insert("room_user_data", { roomId, userId, data });
-    }
-
-    return null;
   },
 });
 
@@ -670,35 +578,6 @@ export const setSessionData = mutation({
       await ctx.db.patch(existing._id, { data });
     } else {
       await ctx.db.insert("room_session_data", { roomId, sessionId, data });
-    }
-
-    return null;
-  },
-});
-
-export const removeUserData = mutation({
-  args: {
-    roomToken: v.string(),
-    userId: v.string(),
-  },
-  returns: v.null(),
-  handler: async (ctx, { roomToken, userId }) => {
-    const roomTokenRecord = await ctx.db
-      .query("roomTokens")
-      .withIndex("token", (q) => q.eq("token", roomToken))
-      .unique();
-    if (!roomTokenRecord) {
-      throw new Error("Invalid room token");
-    }
-    const { roomId } = roomTokenRecord;
-
-    const existing = await ctx.db
-      .query("room_user_data")
-      .withIndex("by_room_user", (q) => q.eq("roomId", roomId).eq("userId", userId))
-      .unique();
-
-    if (existing) {
-      await ctx.db.delete(existing._id);
     }
 
     return null;
