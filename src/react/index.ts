@@ -58,6 +58,13 @@ export type UsePresenceOptions = {
   interval?: number;
   convexUrl?: string;
   /**
+   * Optional auth token getter for the HTTP disconnect call on page unload.
+   *
+   * This is needed because `navigator.sendBeacon` cannot set `Authorization` headers,
+   * so `fetch(..., { keepalive: true })` is used instead.
+   */
+  getAuthToken?: () => string | null;
+  /**
    * @default true
    */
   disconnectOnDocumentHidden?: boolean;
@@ -70,6 +77,7 @@ export function usePresence(options: UsePresenceOptions) {
     userId,
     interval = 10000,
     convexUrl,
+    getAuthToken,
     disconnectOnDocumentHidden = true,
   } = options;
   const hasMounted = useRef(false);
@@ -143,18 +151,24 @@ export function usePresence(options: UsePresenceOptions) {
     // Handle page unload.
     const handleUnload = () => {
       if (sessionTokenRef.current) {
-        const blob = new Blob(
-          [
-            JSON.stringify({
-              path: "presence:disconnect",
-              args: { sessionToken: sessionTokenRef.current },
-            }),
-          ],
-          {
-            type: "application/json",
-          },
-        );
-        navigator.sendBeacon(`${baseUrl}/api/mutation`, blob);
+        const headers: Record<string, string> = {
+          "Content-Type": "application/json",
+        };
+
+        const authToken = getAuthToken?.();
+        if (authToken) {
+          headers["Authorization"] = `Bearer ${authToken}`;
+        }
+
+        fetch(`${baseUrl}/api/mutation`, {
+          method: "POST",
+          keepalive: true,
+          headers,
+          body: JSON.stringify({
+            path: "presence:disconnect",
+            args: { sessionToken: sessionTokenRef.current },
+          }),
+        }).catch((e) => console.error('[usePresence.handleUnload] error:', e));
       }
     };
     window.addEventListener("beforeunload", handleUnload);
