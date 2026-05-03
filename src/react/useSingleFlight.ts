@@ -49,7 +49,7 @@ export default function useSingleFlight<
       void (async () => {
         try {
           await firstReq;
-        } finally {
+        } catch {
           // If it failed, we naively just move on to the next request.
         }
         while (flightStatus.current.upNext) {

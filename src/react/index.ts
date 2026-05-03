@@ -86,6 +86,7 @@ export function usePresence(options: UsePresenceOptions) {
 
   // Each session (browser tab etc) has a unique ID and a token used to disconnect it.
   const [sessionId, setSessionId] = useState(() => crypto.randomUUID());
+  const sessionIdRef = useRef(sessionId);
   const [sessionToken, setSessionToken] = useState<string | undefined>(undefined);
   const sessionTokenRef = useRef<string | undefined>(undefined);
 
@@ -111,9 +112,13 @@ export function usePresence(options: UsePresenceOptions) {
       intervalRef.current = null;
     }
     if (sessionTokenRef.current) {
-      void disconnect({ sessionToken: sessionTokenRef.current });
+      void disconnect({ sessionToken: sessionTokenRef.current }).catch((error) => {
+        console.error("[usePresence] Presence mutation failed", { operation: "disconnect", error });
+      });
     }
-    setSessionId(crypto.randomUUID());
+    const nextSessionId = crypto.randomUUID();
+    sessionIdRef.current = nextSessionId;
+    setSessionId(nextSessionId);
     setSessionToken(undefined);
     setRoomToken(undefined);
 
@@ -123,16 +128,26 @@ export function usePresence(options: UsePresenceOptions) {
 
   useEffect(() => {
     // Update refs whenever tokens change.
+    sessionIdRef.current = sessionId;
     sessionTokenRef.current = sessionToken;
     roomTokenRef.current = roomToken;
-  }, [sessionToken, roomToken]);
+  }, [sessionId, sessionToken, roomToken]);
 
   useEffect(() => {
     if (!sessionId) return;
 
+    let active = true;
+
     // Periodic heartbeats.
     const sendHeartbeat = async () => {
-      const result = await heartbeat({ roomId, userId, sessionId, interval });
+      if (sessionIdRef.current !== sessionId) return;
+
+      const result = await heartbeat({ roomId, userId, sessionId, interval }).catch((error) => {
+        console.error("[usePresence] Presence mutation failed", { operation: "heartbeat", error });
+        return null;
+      });
+      if (!result || !active || sessionIdRef.current !== sessionId) return;
+
       setRoomToken(result.roomToken);
       setSessionToken(result.sessionToken);
     };
@@ -168,7 +183,9 @@ export function usePresence(options: UsePresenceOptions) {
             path: "presence:disconnect",
             args: { sessionToken: sessionTokenRef.current },
           }),
-        }).catch((e) => console.error('[usePresence.handleUnload] error:', e));
+        }).catch((error) => {
+          console.error("[usePresence] Presence mutation failed", { operation: "unload_disconnect", error });
+        });
       }
     };
     window.addEventListener("beforeunload", handleUnload);
@@ -181,7 +198,9 @@ export function usePresence(options: UsePresenceOptions) {
           intervalRef.current = null;
         }
         if (disconnectOnDocumentHidden && sessionTokenRef.current) {
-          await disconnect({ sessionToken: sessionTokenRef.current });
+          await disconnect({ sessionToken: sessionTokenRef.current }).catch((error) => {
+            console.error("[usePresence] Presence mutation failed", { operation: "disconnect", error });
+          });
         }
       } else {
         void sendHeartbeat();
@@ -192,12 +211,16 @@ export function usePresence(options: UsePresenceOptions) {
       }
     };
     const wrappedHandleVisibility = () => {
-      handleVisibility().catch(console.error);
+      handleVisibility().catch((error) => {
+        console.error("[usePresence] Presence mutation failed", { operation: "visibility", error });
+      });
     };
     document.addEventListener("visibilitychange", wrappedHandleVisibility);
 
     // Cleanup.
     return () => {
+      active = false;
+
       if (firstHeartBeatDebounce.current) {
         clearTimeout(firstHeartBeatDebounce.current);
       }
@@ -210,7 +233,9 @@ export function usePresence(options: UsePresenceOptions) {
       // Don't disconnect on first render in strict mode.
       if (hasMounted.current) {
         if (sessionTokenRef.current) {
-          void disconnect({ sessionToken: sessionTokenRef.current });
+          void disconnect({ sessionToken: sessionTokenRef.current }).catch((error) => {
+            console.error("[usePresence] Presence mutation failed", { operation: "disconnect", error });
+          });
         }
       }
     };
