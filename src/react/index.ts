@@ -184,6 +184,15 @@ export function usePresence(options: UsePresenceOptions) {
             args: { sessionToken: sessionTokenRef.current },
           }),
         }).catch((error) => {
+          const isCanceledRequest =
+            (error instanceof DOMException && error.name === "AbortError") ||
+            (error instanceof Error && error.name === "AbortError");
+
+          if (isCanceledRequest) {
+            // Keepalive requests can still be cancelled during reload/unload; presence expires server-side if this loses the race.
+            return;
+          }
+
           console.error("[usePresence] Presence mutation failed", { operation: "unload_disconnect", error });
         });
       }
