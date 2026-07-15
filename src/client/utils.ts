@@ -1,13 +1,10 @@
-import type {
-  GenericActionCtx,
-  GenericDataModel,
-  GenericMutationCtx,
-  GenericQueryCtx,
-} from "convex/server";
+import type { GenericActionCtx, GenericDataModel } from "convex/server";
 
-export type QueryCtx = Pick<GenericQueryCtx<GenericDataModel>, "runQuery">;
+// Pick from the action ctx: in convex 1.42 the query/mutation ctx variants
+// gained an options param, so only the action signatures fit every ctx kind.
+export type QueryCtx = Pick<GenericActionCtx<GenericDataModel>, "runQuery">;
 export type MutationCtx = Pick<
-  GenericMutationCtx<GenericDataModel>,
+  GenericActionCtx<GenericDataModel>,
   "runQuery" | "runMutation"
 >;
 export type ActionCtx = Pick<
